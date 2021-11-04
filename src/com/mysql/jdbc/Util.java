@@ -396,10 +396,13 @@ public class Util {
     /**
      * Handles constructing new instance with the given constructor and wrapping
      * (or not, as required) the exceptions that could possibly be generated
+     *
+     * @param ctor com.mysql.jdbc.JDBC4Connection(java.lang.String,int,java.util.Properties,java.lang.String,java.lang.String) throws java.sql.SQLException
+     * @param args [host, port, Properties, url]
      */
     public static final Object handleNewInstance(Constructor<?> ctor, Object[] args, ExceptionInterceptor exceptionInterceptor) throws SQLException {
         try {
-
+            // mjh: DelegatingConstructorAccessorImpl.newInstance() -> NativeConstructorAccessorImpl.newInstance() -> JDBC4Connection constructor
             return ctor.newInstance(args);
         } catch (IllegalArgumentException e) {
             throw SQLError.createSQLException("Can't instantiate required class", SQLError.SQL_STATE_GENERAL_ERROR, e, exceptionInterceptor);

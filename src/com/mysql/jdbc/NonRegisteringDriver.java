@@ -297,6 +297,10 @@ public class NonRegisteringDriver implements java.sql.Driver {
      *                if a database access error occurs or the url is null
      * 
      * @see java.sql.Driver#connect
+     *
+     *
+     * mjh: 在这里与server建连，有handshake。
+     *
      */
     public java.sql.Connection connect(String url, Properties info) throws SQLException {
         if (url == null) {
@@ -320,6 +324,8 @@ public class NonRegisteringDriver implements java.sql.Driver {
         }
 
         try {
+            // mjh: 这里进行实质建连。进行 Connection Phase。
+            // https://dev.mysql.com/doc/internals/en/initial-handshake.html
             Connection newConn = com.mysql.jdbc.ConnectionImpl.getInstance(host(props), port(props), props, database(props), url);
 
             return newConn;

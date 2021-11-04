@@ -305,6 +305,7 @@ public class StatementImpl implements Statement {
             throw SQLError.createSQLException(Messages.getString("Statement.0"), SQLError.SQL_STATE_CONNECTION_NOT_OPEN, null);
         }
 
+        // mjh: 这里 Statement 拥有 MySQLConnection。
         this.connection = c;
         this.exceptionInterceptor = this.connection.getExceptionInterceptor();
 
@@ -327,6 +328,7 @@ public class StatementImpl implements Statement {
         }
 
         if (this.connection.getUseUnicode()) {
+            // mjh: 默认charEncoding是UTF-8，charConverter是null。
             this.charEncoding = this.connection.getEncoding();
             this.charConverter = this.connection.getCharsetConverter(this.charEncoding);
         }
@@ -340,6 +342,7 @@ public class StatementImpl implements Statement {
             this.useUsageAdvisor = this.connection.getUseUsageAdvisor();
         }
 
+        // mjh: 默认maxRowsConn是-1。
         int maxRowsConn = this.connection.getMaxRows();
         if (maxRowsConn != -1) {
             setMaxRows(maxRowsConn);
@@ -1533,6 +1536,7 @@ public class StatementImpl implements Statement {
                 statementBegins();
 
                 // null catalog: force read of field info on DML
+                // mjh: 进入 ConnectionImpl.execSQL
                 rs = locallyScopedConn.execSQL(this, sql, -1, null, java.sql.ResultSet.TYPE_FORWARD_ONLY, java.sql.ResultSet.CONCUR_READ_ONLY, false,
                         this.currentCatalog, null, isBatch);
 

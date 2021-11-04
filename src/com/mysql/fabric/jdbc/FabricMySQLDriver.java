@@ -67,6 +67,7 @@ public class FabricMySQLDriver extends NonRegisteringDriver implements Driver {
         Properties parsedProps = parseFabricURL(url, info);
 
         if (parsedProps == null) {
+            // mjh: 如果 url 不是 jdbc:mysql:fabric，就直接返回。
             return null;
         }
 

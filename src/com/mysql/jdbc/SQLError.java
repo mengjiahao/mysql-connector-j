@@ -702,6 +702,7 @@ public class SQLError {
              * Warning | 1265 | Data truncated for column 'field1' at row 1 |
              * +---------+------+---------------------------------------------+
              */
+            // mjh: 在这里向server查询warnings。
             warnRs = stmt.executeQuery("SHOW WARNINGS");
 
             while (warnRs.next()) {

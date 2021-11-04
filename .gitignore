@@ -5,9 +5,11 @@
 /nbproject/
 /patches/
 /*.properties
+.idea/
 *~
 *.lock
 *.swp
 *.DS_Store
 *.diff
 *.sh
+*.iml

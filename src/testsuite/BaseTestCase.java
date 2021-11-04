@@ -365,6 +365,7 @@ public abstract class BaseTestCase extends TestCase {
      *            this testcase).
      * 
      * @return a new connection using the given properties.
+     *         mysql的话，这里一般返回的是 JDBC4Connection.
      * 
      * @throws SQLException
      */
@@ -372,7 +373,17 @@ public abstract class BaseTestCase extends TestCase {
         return DriverManager.getConnection(dbUrl, props);
     }
 
+    /**
+     * mjh: 前提是驱动已经通过JVM加载，Class.forName("com.mysql.jdbc.Driver");
+     *
+     * @param url "jdbc:mysql://rdssoxxxxxxxxx.mysql.rds.aliyuncs.com:3306?zeroDateTimeBehavior=convertToNull&amp;"
+     *      + "user=michael&amp;password=password&amp;useUnicode=true&amp;characterEncoding=UTF8"
+     * @param props
+     * @return
+     * @throws SQLException
+     */
     protected Connection getConnectionWithProps(String url, Properties props) throws SQLException {
+        // mjh: DriverManager.getConnection() -> NonRegisteringDriver.connect()
         return DriverManager.getConnection(url, props);
     }
 

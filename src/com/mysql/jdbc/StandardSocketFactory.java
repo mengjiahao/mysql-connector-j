@@ -129,6 +129,7 @@ public class StandardSocketFactory implements SocketFactory, SocketMetadata {
      * @throws IOException
      */
     private void configureSocket(Socket sock, Properties props) throws SocketException, IOException {
+        // mjh: 默认 tcpNoDelay=true, keepAlive=true, receiveBufferSize=0, sendBufferSize=0, trafficClass=0
         sock.setTcpNoDelay(Boolean.valueOf(props.getProperty(TCP_NO_DELAY_PROPERTY_NAME, TCP_NO_DELAY_DEFAULT_VALUE)).booleanValue());
 
         String keepAlive = props.getProperty(TCP_KEEP_ALIVE_PROPERTY_NAME, TCP_KEEP_ALIVE_DEFAULT_VALUE);
@@ -208,6 +209,7 @@ public class StandardSocketFactory implements SocketFactory, SocketMetadata {
                             this.rawSocket.bind(localSockAddr);
                         }
 
+                        // mjh: Socket 阻塞连接，3s超时。
                         this.rawSocket.connect(sockAddr, getRealTimeout(connectTimeout));
 
                         break;

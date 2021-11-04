@@ -43,6 +43,16 @@ public class JDBC4Connection extends ConnectionImpl implements JDBC4MySQLConnect
 
     private JDBC4ClientInfoProvider infoProvider;
 
+    /**
+     * mjh: DriverManager.getConnection() 最终会调用这个构造。
+     *
+     * @param hostToConnectTo
+     * @param portToConnectTo
+     * @param info
+     * @param databaseToConnectTo
+     * @param url
+     * @throws SQLException
+     */
     public JDBC4Connection(String hostToConnectTo, int portToConnectTo, Properties info, String databaseToConnectTo, String url) throws SQLException {
         super(hostToConnectTo, portToConnectTo, info, databaseToConnectTo, url);
     }

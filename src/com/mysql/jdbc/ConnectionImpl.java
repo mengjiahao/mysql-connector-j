@@ -381,7 +381,7 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
         if (!Util.isJdbc4()) {
             return new ConnectionImpl(hostToConnectTo, portToConnectTo, info, databaseToConnectTo, url);
         }
-
+        // mjh: JDBC4走到这里。
         return (Connection) Util.handleNewInstance(JDBC_4_CONNECTION_CTOR,
                 new Object[] { hostToConnectTo, Integer.valueOf(portToConnectTo), info, databaseToConnectTo, url }, null);
     }
@@ -659,6 +659,8 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
 
     /**
      * Creates a connection to a MySQL Server.
+     *
+     * mjh: 这里进行实质性的 mysql 连接。
      * 
      * @param hostToConnectTo
      *            the hostname of the database server
@@ -691,6 +693,7 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
         this.origDatabaseToConnectTo = databaseToConnectTo;
 
         try {
+            // mjh: 通过是否有truncate函数判断是否是JDK13。
             Blob.class.getMethod("truncate", new Class[] { Long.TYPE });
 
             this.isRunningOnJDK13 = false;
@@ -708,7 +711,7 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
         // every logging call.
         //
         // We will reset this to the configured logger during properties initialization.
-        //
+        // mjh: 默认log为 StandardLogger。
         this.log = LogFactory.getLogger(getLogger(), LOGGER_INSTANCE_NAME, getExceptionInterceptor());
 
         if (NonRegisteringDriver.isHostPropertiesList(hostToConnectTo)) {
@@ -758,13 +761,16 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
         initializeDriverProperties(info);
 
         // We store this per-connection, due to static synchronization issues in Java's built-in TimeZone class...
+        // mjh: sun.util.calendar.ZoneInfo[id="Asia/Shanghai",offset=28800000,dstSavings=0,useDaylight=false,transitions=29,lastRule=null]
         this.defaultTimeZone = TimeUtil.getDefaultTimeZone(getCacheDefaultTimezone());
 
+        // mjh: "Asia/Shanghai", isClientTzUTC = false。
         this.isClientTzUTC = !this.defaultTimeZone.useDaylightTime() && this.defaultTimeZone.getRawOffset() == 0;
 
         try {
             this.dbmd = getMetaData(false, false);
             initializeSafeStatementInterceptors();
+            // mjh: 注意在这里会handshake。
             createNewIO(false);
             unSafeStatementInterceptors();
         } catch (SQLException ex) {
@@ -1769,6 +1775,7 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
                         }
 
                         if (dontCheckServerMatch || !characterSetNamesMatches(mysqlCharsetName) || ucs2) {
+                            // mjh: mysqlCharsetName=utf8mb4。会向server发送 SET NAMES utf8mb4。
                             try {
                                 execSQL(null, "SET NAMES " + mysqlCharsetName + connectionCollationSuffix, -1, null, DEFAULT_RESULT_SET_TYPE,
                                         DEFAULT_RESULT_SET_CONCURRENCY, false, this.database, null, false);
@@ -1806,6 +1813,7 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
                     // Only send if needed, if we're caching server variables we -have- to send, because we don't know what it was before we cached them.
                     //
                     if (!isNullOnServer) {
+                        // mjh: 向server发送: SET character_set_results = NULL
                         try {
                             execSQL(null, "SET character_set_results = NULL", -1, null, DEFAULT_RESULT_SET_TYPE, DEFAULT_RESULT_SET_CONCURRENCY, false,
                                     this.database, null, false);
@@ -2141,6 +2149,7 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
         int newPort = 3306;
         String newHost = "localhost";
 
+        // mjh: 一般 protocol 为 null。
         String protocol = mergedProps.getProperty(NonRegisteringDriver.PROTOCOL_PROPERTY_KEY);
 
         if (protocol != null) {
@@ -2184,6 +2193,7 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
         this.serverVariables = new HashMap<String, String>();
         this.serverVariables.put("character_set_server", "utf8");
 
+        // mjh: 注意MysqlIO构造就开始与server建连。
         this.io = new MysqlIO(newHost, newPort, mergedProps, getSocketFactoryClassName(), getProxy(), getSocketTimeout(),
                 this.largeRowSizeThreshold.getValueAsInt());
         this.io.doHandshake(this.user, this.password, this.database);
@@ -2273,11 +2283,13 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
 
     private void createPreparedStatementCaches() throws SQLException {
         synchronized (getConnectionMutex()) {
+            // mjh: 默认cacheSize为25。
             int cacheSize = getPreparedStatementCacheSize();
 
             try {
                 Class<?> factoryClass;
 
+                // mjh: 默认 factoryClass 为 com.mysql.jdbc.PerConnectionLRUFactory。
                 factoryClass = Class.forName(getParseInfoCacheFactory());
 
                 @SuppressWarnings("unchecked")
@@ -2371,6 +2383,7 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
     public java.sql.Statement createStatement(int resultSetType, int resultSetConcurrency) throws SQLException {
         checkClosed();
 
+        // mjh: 只是创建一个Statement。
         StatementImpl stmt = new StatementImpl(getMultiHostSafeProxy(), this.database);
         stmt.setResultSetType(resultSetType);
         stmt.setResultSetConcurrency(resultSetConcurrency);
@@ -2453,6 +2466,7 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
 
             if (getHighAvailability() && (this.autoCommit || getAutoReconnectForPools()) && this.needsPing && !isBatch) {
                 try {
+                    // mjh: 发请求时Ping？
                     pingInternal(false, 0);
 
                     this.needsPing = false;
@@ -2462,6 +2476,7 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
             }
 
             try {
+                // mjh: 这里直接向服务器发送mysql消息。
                 return packet == null
                         ? this.io.sqlQueryDirect(callingStatement, sql, getUseUnicode() ? getEncoding() : null, null, maxRows, resultSetType,
                                 resultSetConcurrency, streamResults, catalog, cachedMetadata)
@@ -2904,8 +2919,10 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
 
     /**
      * Returns the server's character set
-     * 
+     *
      * @return the server's character set.
+     *
+     * mjh: 注意 ServerCharset会通过版本号判断。5.7.0 charset为utf8mb4。
      */
     public String getServerCharset() {
         if (this.io.versionMeetsMinimum(4, 1, 0)) {
@@ -3123,6 +3140,7 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
         }
 
         if (getCachePreparedStatements()) {
+            // mjh: 启用了 cachePreparedStatements 会走到这。
             createPreparedStatementCaches();
         }
 
@@ -3151,6 +3169,8 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
     /**
      * Sets varying properties that depend on server information. Called once we
      * have connected to the server.
+     *
+     * mjh: 注意这里会设置server端属性。
      * 
      * @param info
      * @throws SQLException
@@ -3193,6 +3213,7 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
         //
         // If version is greater than 3.21.22 get the server variables.
         if (versionMeetsMinimum(3, 21, 22)) {
+            // mjh: 会走到这里获取server端的系统属性。
             loadServerVariables();
 
             if (versionMeetsMinimum(5, 0, 2)) {
@@ -3283,6 +3304,7 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
             }
         }
 
+        // mjh: 在这里会与server通信设置字符。
         configureClientCharacterSet(false);
 
         try {
@@ -3683,6 +3705,7 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
 
             Map<String, String> cachedVariableMap = this.serverConfigCache.get(getURL());
 
+            // mjh: 一般 cachedVariableMap = null.
             if (cachedVariableMap != null) {
                 String cachedServerVersion = cachedVariableMap.get(SERVER_VERSION_STRING_VAR_NAME);
 
@@ -3702,6 +3725,7 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
         try {
             stmt = getMetadataSafeStatement();
 
+            // mjh: version = mysql-connector-java-5.1.49
             String version = this.dbmd.getDriverVersion();
 
             if (version != null && version.indexOf('*') != -1) {
@@ -3729,6 +3753,18 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
 
             try {
                 if (versionMeetsMinimum(5, 1, 0)) {
+                    // mjh: 5.7.0版本走到这里，向server端发送。
+                    // Query	/* mysql-connector-java-5.1.49 ( Revision: ad86f36e100e104cd926c6b81c8cab9565750116 ) */
+                    // SELECT  @@session.auto_increment_increment AS auto_increment_increment,
+                    // @@character_set_client AS character_set_client, @@character_set_connection AS character_set_connection,
+                    // @@character_set_results AS character_set_results, @@character_set_server AS character_set_server,
+                    // @@collation_server AS collation_server, @@collation_connection AS collation_connection,
+                    // @@init_connect AS init_connect, @@interactive_timeout AS interactive_timeout, @@license AS license,
+                    // @@lower_case_table_names AS lower_case_table_names, @@max_allowed_packet AS max_allowed_packet,
+                    // @@net_buffer_length AS net_buffer_length, @@net_write_timeout AS net_write_timeout,
+                    // @@performance_schema AS performance_schema, @@query_cache_size AS query_cache_size,
+                    // @@query_cache_type AS query_cache_type, @@sql_mode AS sql_mode, @@system_time_zone AS system_time_zone,
+                    // @@time_zone AS time_zone, @@transaction_isolation AS transaction_isolation, @@wait_timeout AS wait_timeout
                     StringBuilder queryBuf = new StringBuilder(versionComment).append("SELECT");
                     queryBuf.append("  @@session.auto_increment_increment AS auto_increment_increment");
                     queryBuf.append(", @@character_set_client AS character_set_client");
@@ -3764,6 +3800,7 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
                     }
                     queryBuf.append(", @@wait_timeout AS wait_timeout");
 
+                    // mjh: 调用 StatementImpl向server发送query。
                     results = stmt.executeQuery(queryBuf.toString());
                     if (results.next()) {
                         ResultSetMetaData rsmd = results.getMetaData();
@@ -5104,6 +5141,7 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
 
                     commandBuf.append("STRICT_TRANS_TABLES'");
 
+                    // mjh: 向server发送: SET sql_mode='NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES'
                     execSQL(null, commandBuf.toString(), -1, null, DEFAULT_RESULT_SET_TYPE, DEFAULT_RESULT_SET_CONCURRENCY, false, this.database, null, false);
 
                     setJdbcCompliantTruncation(false); // server's handling this for us now

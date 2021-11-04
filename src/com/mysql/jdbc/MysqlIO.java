@@ -291,13 +291,16 @@ public class MysqlIO {
         this.port = port;
         this.host = host;
 
+        // mjh: socketFactoryClassName = com.mysql.jdbc.StandardSocketFactory
         this.socketFactoryClassName = socketFactoryClassName;
         this.socketFactory = createSocketFactory();
         this.exceptionInterceptor = this.connection.getExceptionInterceptor();
 
         try {
+            // mjh: StandardSocketFactory.connect()
             this.mysqlConnection = this.socketFactory.connect(this.host, this.port, props);
 
+            // mjh: socketTimeout 默认为0。
             if (socketTimeout != 0) {
                 try {
                     this.mysqlConnection.setSoTimeout(socketTimeout);
@@ -309,6 +312,7 @@ public class MysqlIO {
             this.mysqlConnection = this.socketFactory.beforeHandshake();
 
             if (this.connection.getUseReadAheadInput()) {
+                // mjh: 默认使用 ReadAheadInputStream。
                 this.mysqlInput = new ReadAheadInputStream(this.mysqlConnection.getInputStream(), 16384, this.connection.getTraceProtocol(),
                         this.connection.getLog());
             } else if (this.connection.useUnbufferedInput()) {
@@ -1004,8 +1008,11 @@ public class MysqlIO {
         this.checkPacketSequence = false;
         this.readPacketSequence = 0;
 
+        // mjh: 阻塞式获取一个Packet。
         Buffer buf = readPacket();
 
+        // server sending Initial Handshake Packet
+        // https://dev.mysql.com/doc/internals/en/connection-phase-packets.html#packet-Protocol::Handshake
         // Get the protocol version
         this.protocolVersion = buf.readByte();
 
@@ -1077,6 +1084,7 @@ public class MysqlIO {
         }
 
         if (versionMeetsMinimum(4, 0, 8)) {
+            // mjh: version 5.7.0 > 4.0.0
             this.maxThreeBytes = (256 * 256 * 256) - 1;
             this.useNewLargePackets = true;
         } else {
@@ -1088,10 +1096,11 @@ public class MysqlIO {
         this.colDecimalNeedsBump = !versionMeetsMinimum(3, 23, 15); // guess? Not noted in changelog
         this.useNewUpdateCounts = versionMeetsMinimum(3, 22, 5);
 
-        // read connection id
+        // read connection id.
         this.threadId = buf.readLong();
 
         if (this.protocolVersion > 9) {
+            // mjh: protocolVersion = 10，即 Protocol::HandshakeV10。
             // read auth-plugin-data-part-1 (string[8])
             this.seed = buf.readString("ASCII", getExceptionInterceptor(), 8);
             // read filler ([00])
@@ -1112,8 +1121,10 @@ public class MysqlIO {
 
             /* New protocol with 16 bytes to describe server characteristics */
             // read character set (1 byte)
+            // default serverCharsetIndex = 45
             this.serverCharsetIndex = buf.readByte() & 0xff;
             // read status flags (2 bytes)
+            // default serverStatus = 2, SERVER_STATUS_AUTOCOMMIT
             this.serverStatus = buf.readInt();
             checkTransactionState(0);
 
@@ -1182,6 +1193,7 @@ public class MysqlIO {
             this.connection.setUseSSL(false);
         }
 
+        // default clientParam = CLIENT_LONG_FLAG | CLIENT_FOUND_ROWS | CLIENT_DEPRECATE_EOF
         if ((this.serverCapabilities & CLIENT_LONG_FLAG) != 0) {
             // We understand other column flags, as well
             this.clientParam |= CLIENT_LONG_FLAG;
@@ -1214,6 +1226,7 @@ public class MysqlIO {
         // switch to pluggable authentication if available
         //
         if ((this.serverCapabilities & CLIENT_PLUGIN_AUTH) != 0) {
+            // mjh: 这里 the client sends the Handshake Response Packet。
             proceedHandshakeWithPluggableAuthentication(user, password, database, buf);
             return;
         }
@@ -1684,6 +1697,7 @@ public class MysqlIO {
                         skipPassword = !this.clientDefaultAuthenticationPluginName.equals(pluginName);
                     }
 
+                    // default is mysql_native_password.
                     this.serverDefaultAuthenticationPluginName = plugin.getProtocolPluginName();
 
                     checkConfidentiality(plugin);
@@ -1831,6 +1845,8 @@ public class MysqlIO {
 
                 } else {
                     // write Auth Response Packet
+                    // mjh: 发送 HandshakeResponse。
+                    // https://dev.mysql.com/doc/internals/en/connection-phase-packets.html#packet-Protocol::HandshakeResponse
                     String enc = getEncodingForHandshake();
 
                     last_sent = new Buffer(packLength);
@@ -1866,6 +1882,7 @@ public class MysqlIO {
                         sendConnectionAttributes(last_sent, enc, this.connection);
                     }
 
+                    // mjh: 这里实际发送。
                     send(last_sent, last_sent.getPosition());
                 }
 
@@ -2621,6 +2638,7 @@ public class MysqlIO {
 
                 if (characterEncoding != null) {
                     if (this.platformDbCharsetMatches) {
+                        // mjh: 一般来说在这里发送Query。
                         this.sendPacket.writeStringNoNull(query, characterEncoding, this.connection.getServerCharset(), this.connection.parserKnowsUnicode(),
                                 this.connection);
                     } else {
@@ -2672,6 +2690,7 @@ public class MysqlIO {
             }
 
             // Send query command and sql query string
+            // mjh: 在这里发送消息 query.
             Buffer resultPacket = sendCommand(MysqlDefs.QUERY, null, queryPacket, false, null, 0);
 
             long fetchBeginTime = 0;
@@ -2767,6 +2786,7 @@ public class MysqlIO {
             }
 
             if (this.hadWarnings) {
+                // mjh: 注意如果这里有WARNINGS，会去查询。
                 scanForAndThrowDataTruncation();
             }
 
