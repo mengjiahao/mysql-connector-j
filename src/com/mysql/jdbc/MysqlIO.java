@@ -2638,7 +2638,6 @@ public class MysqlIO {
 
                 if (characterEncoding != null) {
                     if (this.platformDbCharsetMatches) {
-                        // mjh: 一般来说在这里发送Query。
                         this.sendPacket.writeStringNoNull(query, characterEncoding, this.connection.getServerCharset(), this.connection.parserKnowsUnicode(),
                                 this.connection);
                     } else {
@@ -2741,6 +2740,7 @@ public class MysqlIO {
                 fetchBeginTime = queryEndTime;
             }
 
+            // mjh: rs是JDBC42ResultSet。
             ResultSetInternalMethods rs = readAllResults(callingStatement, maxRows, resultSetType, resultSetConcurrency, streamResults, catalog, resultPacket,
                     false, -1L, cachedMetadata);
 

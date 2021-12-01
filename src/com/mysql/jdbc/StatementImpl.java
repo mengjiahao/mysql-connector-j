@@ -718,6 +718,9 @@ public class StatementImpl implements Statement {
      * Execute a SQL statement that may return multiple results. We don't have
      * to worry about this since we do not support multiple ResultSets. You can
      * use getResultSet or getUpdateCount to retrieve the result.
+     *
+     *
+     * mjh: 这里是Statement执行的方法。
      * 
      * @param sql
      *            any SQL statement
@@ -1409,6 +1412,7 @@ public class StatementImpl implements Statement {
                 }
             }
 
+            // mjh: 如果是读请求，这里lastInsertId=-1。
             this.lastInsertId = this.results.getUpdateID();
 
             if (cachedMetaData != null) {

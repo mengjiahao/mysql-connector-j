@@ -1278,6 +1278,7 @@ public class ServerPreparedStatement extends PreparedStatement {
 
                 statementBegins();
 
+                // mjh: 这里发送 COM_EXECUTE 消息。
                 Buffer resultPacket = mysql.sendCommand(MysqlDefs.COM_EXECUTE, null, packet, false, null, 0);
 
                 long queryEndTime = countDuration ? queryEndTime = mysql.getCurrentTimeNanosOrMillis() : 0L;
@@ -1334,6 +1335,7 @@ public class ServerPreparedStatement extends PreparedStatement {
                             mysql.getCurrentTimeNanosOrMillis() - begin, new Throwable(), truncateQueryToLog(queryAsString));
                 }
 
+                // mjh: 注意 this.fieldCount 知道结果的列数。
                 com.mysql.jdbc.ResultSetInternalMethods rs = mysql.readAllResults(this, maxRowsToRetrieve, this.resultSetType, this.resultSetConcurrency,
                         createStreamingResultSet, this.currentCatalog, resultPacket, true, this.fieldCount, metadataFromCache);
 

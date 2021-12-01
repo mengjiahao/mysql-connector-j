@@ -1618,6 +1618,7 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
      *             the client doesn't know about.
      */
     private boolean configureClientCharacterSet(boolean dontCheckServerMatch) throws SQLException {
+        // mjh: 这里设置 session system variables.
         String realJavaEncoding = getEncoding();
         boolean characterSetAlreadyConfigured = false;
 
@@ -2476,7 +2477,7 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
             }
 
             try {
-                // mjh: 这里直接向服务器发送mysql消息。
+                // mjh: 这里直接向服务器发送mysql消息，不理会返回值。
                 return packet == null
                         ? this.io.sqlQueryDirect(callingStatement, sql, getUseUnicode() ? getEncoding() : null, null, maxRows, resultSetType,
                                 resultSetConcurrency, streamResults, catalog, cachedMetadata)
@@ -3794,6 +3795,7 @@ public class ConnectionImpl extends ConnectionPropertiesImpl implements MySQLCon
                     queryBuf.append(", @@system_time_zone AS system_time_zone");
                     queryBuf.append(", @@time_zone AS time_zone");
                     if (versionMeetsMinimum(8, 0, 3) || (versionMeetsMinimum(5, 7, 20) && !versionMeetsMinimum(8, 0, 0))) {
+                        // mjh: 注意这里5.7版本version>=5.7.20时query不一样。
                         queryBuf.append(", @@transaction_isolation AS transaction_isolation");
                     } else {
                         queryBuf.append(", @@tx_isolation AS transaction_isolation");
