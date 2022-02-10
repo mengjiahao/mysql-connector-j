@@ -47,6 +47,7 @@ public class TimeTrackingPacketSender implements MessageSender<NativePacketPaylo
     }
 
     public void send(byte[] packet, int packetLen, byte packetSequence) throws IOException {
+        // packetSender 是 SimplePacketSender.
         this.packetSender.send(packet, packetLen, packetSequence);
 
         this.previousPacketSentTime = this.lastPacketSentTime;

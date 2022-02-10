@@ -6,6 +6,7 @@
 /nbproject/
 /patches/
 /*.properties
+.idea/
 *~
 *.lock
 *.swp
@@ -18,3 +19,4 @@
 .attach_pid*
 hs_err_pid*.log
 *.sh
+*.iml

@@ -1006,6 +1006,7 @@ public class ClientPreparedStatement extends com.mysql.cj.jdbc.StatementImpl imp
 
             locallyScopedConn.setSessionMaxRows(this.maxRows);
 
+            // query/execute 在这里执行.
             this.results = executeInternal(this.maxRows, sendPacket, createStreamingResultSet(), true, cachedMetadata, false);
 
             if (oldDb != null) {

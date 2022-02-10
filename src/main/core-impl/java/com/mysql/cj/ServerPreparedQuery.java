@@ -113,7 +113,7 @@ public class ServerPreparedQuery extends AbstractPreparedQuery<ServerPreparedQue
     }
 
     /**
-     * 
+     * 发送 PreparedStatement 给 server.
      * @param sql
      *            query string
      * @throws IOException
@@ -128,6 +128,7 @@ public class ServerPreparedQuery extends AbstractPreparedQuery<ServerPreparedQue
             boolean loadDataQuery = StringUtils.startsWithIgnoreCaseAndWs(sql, "LOAD DATA");
 
             String characterEncoding = null;
+            // connectionEncoding 是 UTF-8
             String connectionEncoding = this.session.getPropertySet().getStringProperty(PropertyKey.characterEncoding).getValue();
 
             if (!loadDataQuery && (connectionEncoding != null)) {
@@ -140,6 +141,7 @@ public class ServerPreparedQuery extends AbstractPreparedQuery<ServerPreparedQue
             // 4.1.1 and newer use the first byte as an 'ok' or 'error' flag, so move the buffer pointer past it to start reading the statement id.
             prepareResultPacket.setPosition(1);
 
+            // 解析 COM_STMT_PREPARE Response. 注意 fieldCount 与 parameterCount.
             this.serverStatementId = prepareResultPacket.readInteger(IntegerDataType.INT4);
             int fieldCount = (int) prepareResultPacket.readInteger(IntegerDataType.INT2);
             setParameterCount((int) prepareResultPacket.readInteger(IntegerDataType.INT2));
@@ -163,12 +165,15 @@ public class ServerPreparedQuery extends AbstractPreparedQuery<ServerPreparedQue
                     this.session.getProtocol().skipPacket();
                 }
 
+                // 这里解析有 参数类型.
+                // com.mysql.cj.result.Field@63355449[dbName=null,tableName=null,originalTableName=null,columnName=?,originalColumnName=null,mysqlType=253(FIELD_TYPE_VARBINARY),sqlType=-3,flags= BINARY BLOB, charsetIndex=63, charsetName=ISO-8859-1]
                 this.parameterFields = this.session.getProtocol().read(ColumnDefinition.class, new ColumnDefinitionFactory(this.parameterCount, null))
                         .getFields();
             }
 
             // Read in the result set column information
             if (fieldCount > 0) {
+                // 这里解析有 返回的列类型.
                 this.resultFields = this.session.getProtocol().read(ColumnDefinition.class, new ColumnDefinitionFactory(fieldCount, null));
             }
         }
@@ -206,7 +211,9 @@ public class ServerPreparedQuery extends AbstractPreparedQuery<ServerPreparedQue
         }
         String queryAsString = this.profileSQL || this.logSlowQueries || this.gatherPerfMetrics ? asSql(true) : "";
 
+        // 发送 query 或者 参数.
         NativePacketPayload packet = prepareExecutePacket();
+        // resPacket 为返回的第1个包.
         NativePacketPayload resPacket = sendExecutePacket(packet, queryAsString);
         T rs = readExecuteResult(resPacket, maxRowsToRetrieve, createStreamingResultSet, metadata, resultSetFactory, queryAsString);
 
@@ -241,6 +248,7 @@ public class ServerPreparedQuery extends AbstractPreparedQuery<ServerPreparedQue
 
         //
         // Send all long data
+        // 注意这里利用了 parameterCount
         //
         for (int i = 0; i < this.parameterCount; i++) {
             if (parameterBindings[i].isStream()) {
@@ -266,6 +274,7 @@ public class ServerPreparedQuery extends AbstractPreparedQuery<ServerPreparedQue
         }
 
         byte flags = 0;
+        // resultFields 其实没利用到，只是知道这是 select.
         if (this.resultFields != null && this.resultFields.getFields() != null && this.useCursorFetch && this.resultSetType == Type.FORWARD_ONLY
                 && this.fetchSize > 0) {
             // we only create cursor-backed result sets if

@@ -544,7 +544,7 @@ public class NativeProtocol extends AbstractProtocol<NativePacketPayload> implem
 
     /**
      * @param packet
-     *            {@link Message}
+     *            {@link Message} SQL可以是NativePacketPayload
      * @param packetLen
      *            length of header + payload
      */
@@ -556,6 +556,7 @@ public class NativeProtocol extends AbstractProtocol<NativePacketPayload> implem
             }
 
             this.packetSequence++;
+            // packetSender 是 TimeTrackingPacketSender.
             this.packetSender.send(packet.getByteBuffer(), packetLen, this.packetSequence);
 
             //
@@ -570,6 +571,20 @@ public class NativeProtocol extends AbstractProtocol<NativePacketPayload> implem
         }
     }
 
+    /**
+     * query请求（包括 PreparedStatement）从这里发送.
+     *
+     * @param queryPacket
+     *            a packet pre-loaded with data for the protocol (eg.
+     *            from a client-side prepared statement). The first byte of
+     *            this packet is the MySQL protocol 'command' from MysqlDefs
+     * @param skipCheck
+     *            do not call checkErrorPacket() if true
+     * @param timeoutMillis
+     *            timeout
+     *
+     * @return
+     */
     @Override
     public final NativePacketPayload sendCommand(Message queryPacket, boolean skipCheck, int timeoutMillis) {
         int command = queryPacket.getByteBuffer()[0];
@@ -583,6 +598,7 @@ public class NativeProtocol extends AbstractProtocol<NativePacketPayload> implem
             }
         }
 
+        // packetReader 是 MultiPacketReader.
         this.packetReader.resetMessageSequence();
 
         int oldTimeout = 0;
@@ -637,6 +653,7 @@ public class NativeProtocol extends AbstractProtocol<NativePacketPayload> implem
                     this.packetReader.resetMessageSequence();
                 }
 
+                // 这里获取返回包.
                 returnPacket = checkErrorMessage(command);
 
                 if (this.queryInterceptors != null) {
@@ -1666,8 +1683,10 @@ public class NativeProtocol extends AbstractProtocol<NativePacketPayload> implem
         if (this.serverSession.hasMoreResults()) {
             T currentResultSet = topLevelResultSet;
             if (streamResults) {
+                // 流式接口调用 readNextResultset
                 currentResultSet = readNextResultset(currentResultSet, maxRows, true, isBinaryEncoded, resultSetFactory);
             } else {
+                // 批量接口直接循环完 readNextResultset
                 while (this.serverSession.hasMoreResults()) {
                     currentResultSet = readNextResultset(currentResultSet, maxRows, false, isBinaryEncoded, resultSetFactory);
                 }

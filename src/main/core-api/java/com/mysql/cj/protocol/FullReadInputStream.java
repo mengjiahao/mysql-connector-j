@@ -53,6 +53,14 @@ public class FullReadInputStream extends FilterInputStream {
         return readFully(b, 0, b.length);
     }
 
+    /**
+     * 同步读取len长度的数据.
+     * @param b
+     * @param off
+     * @param len
+     * @return
+     * @throws IOException
+     */
     public int readFully(byte[] b, int off, int len) throws IOException {
         if (len < 0) {
             throw new IndexOutOfBoundsException();

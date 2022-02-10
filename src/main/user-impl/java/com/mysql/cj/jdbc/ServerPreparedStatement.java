@@ -110,7 +110,7 @@ public class ServerPreparedStatement extends ClientPreparedStatement {
      * @param conn
      *            the connection creating us.
      * @param sql
-     *            the SQL containing the statement to prepare.
+     *            the SQL containing the statement to prepare. 参数化SQL.
      * @param db
      *            the database in use when we were created.
      * @param resultSetType
