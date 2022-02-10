@@ -45,11 +45,13 @@ import java.sql.SQLException;
  * <p>
  * When a Driver class is loaded, it should create an instance of itself and register it with the DriverManager. This means that a user can load and register a
  * driver by doing Class.forName("foo.bah.Driver")
+ *
+ * 实现 Class.forName(JDBC_DRIVER)。
  */
 public class Driver extends NonRegisteringDriver implements java.sql.Driver {
     //
     // Register ourselves with the DriverManager
-    //
+    // 直接调用 JDK的 DriverManager 注册 Driver信息。
     static {
         try {
             java.sql.DriverManager.registerDriver(new Driver());

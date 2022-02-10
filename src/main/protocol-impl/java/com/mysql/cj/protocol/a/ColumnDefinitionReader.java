@@ -37,6 +37,9 @@ import com.mysql.cj.protocol.a.NativeConstants.IntegerDataType;
 import com.mysql.cj.result.Field;
 import com.mysql.cj.util.LazyString;
 
+/**
+ * ColumnDefinitionPacket 解包。
+ */
 public class ColumnDefinitionReader implements ProtocolEntityReader<ColumnDefinition, NativePacketPayload> {
 
     private NativeProtocol protocol;

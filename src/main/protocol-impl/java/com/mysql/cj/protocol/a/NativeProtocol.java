@@ -234,6 +234,7 @@ public class NativeProtocol extends AbstractProtocol<NativePacketPayload> implem
         this.reusablePacket = new NativePacketPayload(INITIAL_PACKET_SIZE);
         //this.sendPacket = new Buffer(INITIAL_PACKET_SIZE);
 
+        // SimplePacketSender/SimplePacketReader 用于消息包切分。
         try {
             this.packetSender = new SimplePacketSender(this.socketConnection.getMysqlOutput());
             this.packetReader = new SimplePacketReader(this.socketConnection, this.maxAllowedPacket);
@@ -1361,11 +1362,20 @@ public class NativeProtocol extends AbstractProtocol<NativePacketPayload> implem
         }
     }
 
+    /**
+     * 处理 handshake 认证。
+     * @param user
+     *            DB user name
+     * @param password
+     *            DB user password
+     * @param database
+     */
     public void connect(String user, String password, String database) {
         // session creation & initialization happens here
 
         beforeHandshake();
 
+        // 调用 NativeAuthenticationProvider
         this.authProvider.connect(user, password, database);
     }
 
@@ -2242,6 +2252,7 @@ public class NativeProtocol extends AbstractProtocol<NativePacketPayload> implem
             }
         }
 
+        // 发送 SET character_set_results = NULL
         this.serverSession.getCharsetSettings().configurePostHandshake(false);
     }
 }

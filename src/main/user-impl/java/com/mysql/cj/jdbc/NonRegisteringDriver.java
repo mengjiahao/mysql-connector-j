@@ -70,6 +70,7 @@ import com.mysql.cj.util.StringUtils;
  * When a Driver class is loaded, it should create an instance of itself and register it with the DriverManager. This means that a user can load and register a
  * driver by doing Class.forName("foo.bah.Driver")
  * </p>
+ *
  */
 public class NonRegisteringDriver implements java.sql.Driver {
 
@@ -93,6 +94,9 @@ public class NonRegisteringDriver implements java.sql.Driver {
         return Constants.OS_ARCH;
     }
 
+    /**
+     * Class.forName(JDBC_DRIVER) 先走到这。Driver调用。
+     */
     static {
         try {
             Class.forName(AbandonedConnectionCleanupThread.class.getName());
@@ -178,6 +182,9 @@ public class NonRegisteringDriver implements java.sql.Driver {
      * 
      * @exception SQLException
      *                if a database access error occurs or the url is {@code null}
+     *
+     * 调用 jdk的DriverManager.getConnection(DB_URL, properties)会走到这，
+     * 其调用 getConnection(url, info, Reflection.getCallerClass()) 通过反射注册的driver类进行connect.
      */
     @Override
     public java.sql.Connection connect(String url, Properties info) throws SQLException {
@@ -195,6 +202,7 @@ public class NonRegisteringDriver implements java.sql.Driver {
             ConnectionUrl conStr = ConnectionUrl.getConnectionUrlInstance(url, info);
             switch (conStr.getType()) {
                 case SINGLE_CONNECTION:
+                    // 一般都是 SingleConnectionUrl
                     return com.mysql.cj.jdbc.ConnectionImpl.getInstance(conStr.getMainHost());
 
                 case FAILOVER_CONNECTION:

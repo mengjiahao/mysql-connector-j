@@ -43,6 +43,7 @@ import com.mysql.cj.log.Log;
 
 /**
  * Socket factory for vanilla TCP/IP sockets (the standard)
+ * connect建立底层TCP连接。
  */
 public class StandardSocketFactory implements SocketFactory {
 
@@ -177,6 +178,10 @@ public class StandardSocketFactory implements SocketFactory {
         throw new SocketException("Unable to create socket");
     }
 
+    /**
+     * 主要是设置超时，默认 socketTimeoutBackup为 0。
+     * @throws IOException
+     */
     public void beforeHandshake() throws IOException {
         resetLoginTimeCountdown();
         this.socketTimeoutBackup = this.rawSocket.getSoTimeout();
@@ -206,6 +211,8 @@ public class StandardSocketFactory implements SocketFactory {
      * 
      * @throws SocketException
      *             If the login timeout is reached or exceeded.
+     *
+     * 通过主动调用此函数来检查是否超时。默认 超时时间为 login timeout.
      */
     protected void resetLoginTimeCountdown() throws SocketException {
         if (this.loginTimeoutCountdown > 0) {

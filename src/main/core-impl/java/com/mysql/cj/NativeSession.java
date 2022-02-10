@@ -123,6 +123,7 @@ public class NativeSession extends CoreSession implements Serializable {
         // this configuration places no knowledge of protocol or session on physical connection.
         // physical connection is responsible *only* for I/O streams
         if (this.protocol == null) {
+            // protocol 是 NativeProtocol.
             this.protocol = NativeProtocol.getInstance(this, socketConnection, this.propertySet, this.log, transactionManager);
         } else {
             this.protocol.init(this, socketConnection, this.propertySet, transactionManager);
@@ -377,6 +378,8 @@ public class NativeSession extends CoreSession implements Serializable {
     /**
      * Loads the result of 'SHOW VARIABLES' into the serverVariables field so
      * that the driver can configure itself.
+     *
+     * 向server获取系统变量.
      * 
      * @param syncMutex
      *            synchronization mutex
@@ -422,6 +425,7 @@ public class NativeSession extends CoreSession implements Serializable {
             this.protocol.getServerSession().setServerVariables(new HashMap<String, String>());
 
             if (versionMeetsMinimum(5, 1, 0)) {
+                // mysql-connector-java-8.0.27 走这里.
                 StringBuilder queryBuf = new StringBuilder(versionComment).append("SELECT");
                 queryBuf.append("  @@session.auto_increment_increment AS auto_increment_increment");
                 queryBuf.append(", @@character_set_client AS character_set_client");
@@ -464,6 +468,7 @@ public class NativeSession extends CoreSession implements Serializable {
                     if ((r = rs.getRows().next()) != null) {
                         for (int i = 0; i < f.length; i++) {
                             String value = r.getValue(i, vf);
+                            // 将系统变量 保存到 NativeServerSession.serverVariables中.
                             this.protocol.getServerSession().getServerVariables().put(f[i].getColumnLabel(),
                                     "utf8mb3".equalsIgnoreCase(value) ? "utf8" : value); // recent server versions return "utf8mb3" instead of "utf8"
                         }

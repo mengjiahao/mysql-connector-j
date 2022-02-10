@@ -102,6 +102,8 @@ import com.mysql.cj.util.Util;
  * A Connection's database is able to provide information describing its tables, its supported SQL grammar, its stored procedures, the capabilities of this
  * connection, etc. This information is obtained with the getMetaData method.
  * </p>
+ *
+ * mjh: JDBC 连接类实现。
  */
 public class ConnectionImpl implements JdbcConnection, SessionEventListener, Serializable {
 
@@ -232,7 +234,7 @@ public class ConnectionImpl implements JdbcConnection, SessionEventListener, Ser
      * Creates a connection instance.
      * 
      * @param hostInfo
-     *            {@link HostInfo} instance
+     *            {@link HostInfo} instance {host: "IP", port: PORT, hostProperties: {useConfigs=maxPerformance, rewriteBatchedStatements=false, connectionAttributes=none, alwaysSendSetIsolation=false, useServerPrepStmts=true, useSSL=false, dbname=, elideSetAutoCommits=true, cacheCallableStmts=true, cachePrepStmts=true, enableQueryTimeouts=false, useLocalSessionState=true, cacheServerConfiguration=true}}
      * @return new {@link ConnectionImpl} instance
      * @throws SQLException
      *             if a database access error occurs
@@ -383,6 +385,7 @@ public class ConnectionImpl implements JdbcConnection, SessionEventListener, Ser
             this.user = hostInfo.getUser();
             this.password = hostInfo.getPassword();
 
+            // 将 HostInfo 内属性转为 props.
             this.props = hostInfo.exposeAsProperties();
 
             this.propertySet = new JdbcPropertySetImpl();
@@ -445,6 +448,7 @@ public class ConnectionImpl implements JdbcConnection, SessionEventListener, Ser
         }
 
         try {
+            // 注意这个步骤会与server 认证与建连。
             createNewIO(false);
 
             unSafeQueryInterceptors();
@@ -806,6 +810,10 @@ public class ConnectionImpl implements JdbcConnection, SessionEventListener, Ser
         return;
     }
 
+    /**
+     * 建连通过锁保护互斥区。
+     * @param isForReconnect
+     */
     @Override
     public void createNewIO(boolean isForReconnect) {
         synchronized (getConnectionMutex()) {
@@ -815,6 +823,7 @@ public class ConnectionImpl implements JdbcConnection, SessionEventListener, Ser
 
             try {
                 if (!this.autoReconnect.getValue()) {
+                    // 一般来说走这里。
                     connectOneTryOnly(isForReconnect);
 
                     return;
@@ -944,7 +953,9 @@ public class ConnectionImpl implements JdbcConnection, SessionEventListener, Ser
 
         try {
 
+            // JdbcConnection 是 ConnectionImpl 本身.
             JdbcConnection c = getProxy();
+            // 这里进行 handshake.
             this.session.connect(this.origHostInfo, this.user, this.password, this.database, getLoginTimeout(), c);
 
             // save state from old connection
@@ -2256,6 +2267,10 @@ public class ConnectionImpl implements JdbcConnection, SessionEventListener, Ser
         }
     }
 
+    /**
+     * SET sql_mode='NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES'
+     * @throws SQLException
+     */
     private void setupServerForTruncationChecks() throws SQLException {
         synchronized (getConnectionMutex()) {
             RuntimeProperty<Boolean> jdbcCompliantTruncation = this.propertySet.getProperty(PropertyKey.jdbcCompliantTruncation);

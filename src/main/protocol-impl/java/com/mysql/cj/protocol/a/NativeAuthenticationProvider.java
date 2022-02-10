@@ -121,6 +121,8 @@ public class NativeAuthenticationProvider implements AuthenticationProvider<Nati
     /**
      * Initialize communications with the MySQL server. Handles logging on, and
      * handling initial connection errors.
+     *
+     * 向 server 发送 auth信息 并验证.
      * 
      * @param user
      *            user name
@@ -362,11 +364,14 @@ public class NativeAuthenticationProvider implements AuthenticationProvider<Nati
      * at any moment during the connection life-time via a Change User request.
      * 
      * This method will use registered authentication plugins as requested by the server.
+     *
      * 
      * @param challenge
      *            the Auth Challenge Packet received from server if
      *            this method is used during the initial connection.
      *            Otherwise null.
+     *
+     * 处理从server端传来的auth消息.
      */
     private void proceedHandshakeWithPluggableAuthentication(final NativePacketPayload challenge) {
         ServerSession serverSession = this.protocol.getServerSession();
@@ -386,6 +391,7 @@ public class NativeAuthenticationProvider implements AuthenticationProvider<Nati
         /*
          * Select the initial plugin:
          * Choose the client-side default authentication plugin, if explicitely specified, otherwise choose the server-side default authentication plugin.
+         * 默认 clientDefaultAuthenticationPluginExplicitelySet 是false，从 server端获取默认的auth插件.
          */
         String pluginName;
         if (this.clientDefaultAuthenticationPluginExplicitelySet) {
@@ -457,6 +463,7 @@ public class NativeAuthenticationProvider implements AuthenticationProvider<Nati
 
                 } else {
                     // write HandshakeResponse packet
+                    // 一般来说auth匹配的话，直接给server发送response.
                     last_sent = createHandshakeResponsePacket(serverSession, plugin.getProtocolPluginName(), toServer);
                     this.protocol.send(last_sent, last_sent.getPosition());
                 }

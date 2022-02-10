@@ -50,6 +50,16 @@ import com.mysql.cj.protocol.SocketConnection;
 
 public class NativeSocketConnection extends AbstractSocketConnection implements SocketConnection {
 
+    /**
+     * 建立一个物理连接。
+     * @param hostName
+     * @param portNumber
+     * @param propSet
+     * @param excInterceptor
+     * @param log
+     *            logger
+     * @param loginTimeout 可DriverManager.setLoginTimeout设置。
+     */
     @Override
     public void connect(String hostName, int portNumber, PropertySet propSet, ExceptionInterceptor excInterceptor, Log log, int loginTimeout) {
 
@@ -59,9 +69,12 @@ public class NativeSocketConnection extends AbstractSocketConnection implements 
             this.propertySet = propSet;
             this.exceptionInterceptor = excInterceptor;
 
+            // com.mysql.cj.protocol.StandardSocketFactory
             this.socketFactory = createSocketFactory(propSet.getStringProperty(PropertyKey.socketFactory).getStringValue());
+            // connect后创建客户端socket.
             this.mysqlSocket = this.socketFactory.connect(this.host, this.port, propSet, loginTimeout);
 
+            // socketTimeout 默认是 0.
             int socketTimeout = propSet.getIntegerProperty(PropertyKey.socketTimeout).getValue();
             if (socketTimeout != 0) {
                 try {
@@ -73,6 +86,7 @@ public class NativeSocketConnection extends AbstractSocketConnection implements 
 
             this.socketFactory.beforeHandshake();
 
+            // 从 server 获取初次 initial handshake packet.
             InputStream rawInputStream;
             if (propSet.getBooleanProperty(PropertyKey.useReadAheadInput).getValue()) {
                 rawInputStream = new ReadAheadInputStream(this.mysqlSocket.getInputStream(), 16384,
@@ -83,6 +97,7 @@ public class NativeSocketConnection extends AbstractSocketConnection implements 
                 rawInputStream = new BufferedInputStream(this.mysqlSocket.getInputStream(), 16384);
             }
 
+            // 看起来 初次的消息不处理？
             this.mysqlInput = new FullReadInputStream(rawInputStream);
             this.mysqlOutput = new BufferedOutputStream(this.mysqlSocket.getOutputStream(), 16384);
         } catch (IOException ioEx) {

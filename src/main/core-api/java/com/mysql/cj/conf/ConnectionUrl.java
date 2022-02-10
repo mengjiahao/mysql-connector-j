@@ -264,6 +264,7 @@ public abstract class ConnectionUrl implements DatabaseUrlContainer {
         if (connString == null) {
             throw ExceptionFactory.createException(WrongArgumentException.class, Messages.getString("ConnectionString.0"));
         }
+        // 这里将 DB_URL + Properties 组合成 jdbc:mysql://IP:PORT§{user=root, password=123456, useConfigs=maxPerformance, useSSL=false, rewriteBatchedStatements=false, useServerPrepStmts=true}
         String connStringCacheKey = buildConnectionStringCacheKey(connString, info);
         ConnectionUrl connectionUrl;
 
@@ -277,6 +278,7 @@ public abstract class ConnectionUrl implements DatabaseUrlContainer {
                 connectionUrl = connectionUrlCache.get(connStringCacheKey);
                 if (connectionUrl == null) {
                     ConnectionUrlParser connStrParser = ConnectionUrlParser.parseConnectionString(connString);
+                    // connectionUrl = com.mysql.cj.conf.url.SingleConnectionUrl@6e06451e :: {type: "SINGLE_CONNECTION", hosts: [com.mysql.cj.conf.HostInfo@59494225 :: {host: "IP", port: PORT, hostProperties: {useConfigs=maxPerformance, rewriteBatchedStatements=false, connectionAttributes=none, alwaysSendSetIsolation=false, useServerPrepStmts=true, useSSL=false, dbname=, elideSetAutoCommits=true, cacheCallableStmts=true, cachePrepStmts=true, enableQueryTimeouts=false, useLocalSessionState=true, cacheServerConfiguration=true}}], database: "", properties: {useConfigs=maxPerformance, rewriteBatchedStatements=false, connectionAttributes=none, alwaysSendSetIsolation=false, useServerPrepStmts=true, useSSL=false, password=123456, elideSetAutoCommits=true, cacheCallableStmts=true, cachePrepStmts=true, enableQueryTimeouts=false, user=root, useLocalSessionState=true, cacheServerConfiguration=true}, propertiesTransformer: null}
                     connectionUrl = Type.getConnectionUrlInstance(connStrParser, info);
                     connectionUrlCache.put(connStringCacheKey, connectionUrl);
                 }
