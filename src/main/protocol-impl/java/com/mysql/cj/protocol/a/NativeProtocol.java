@@ -572,7 +572,7 @@ public class NativeProtocol extends AbstractProtocol<NativePacketPayload> implem
     }
 
     /**
-     * query请求（包括 PreparedStatement）从这里发送.
+     * RPC, query请求（包括 PreparedStatement）从这里发送，然后获取回包 NativePacketPayload.
      *
      * @param queryPacket
      *            a packet pre-loaded with data for the protocol (eg.
@@ -653,7 +653,7 @@ public class NativeProtocol extends AbstractProtocol<NativePacketPayload> implem
                     this.packetReader.resetMessageSequence();
                 }
 
-                // 这里获取返回包.
+                // 这里同步获取返回二进制包.
                 returnPacket = checkErrorMessage(command);
 
                 if (this.queryInterceptors != null) {
@@ -671,6 +671,7 @@ public class NativeProtocol extends AbstractProtocol<NativePacketPayload> implem
             throw e;
 
         } finally {
+            // 默认 timeoutMillis 为 0。
             if (timeoutMillis != 0) {
                 try {
                     this.socketConnection.getMysqlSocket().setSoTimeout(oldTimeout);

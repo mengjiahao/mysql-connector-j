@@ -257,6 +257,13 @@ public class ServerPreparedQueryBindValue extends ClientPreparedQueryBindValue i
         }
     }
 
+    /**
+     * binary value encode.
+     * @param intoPacket
+     * @param isLoadDataQuery
+     * @param characterEncoding
+     * @param interceptor
+     */
     public void storeBinding(NativePacketPayload intoPacket, boolean isLoadDataQuery, String characterEncoding, ExceptionInterceptor interceptor) {
         synchronized (this) {
             try {

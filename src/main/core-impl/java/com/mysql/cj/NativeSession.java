@@ -425,7 +425,7 @@ public class NativeSession extends CoreSession implements Serializable {
             this.protocol.getServerSession().setServerVariables(new HashMap<String, String>());
 
             if (versionMeetsMinimum(5, 1, 0)) {
-                // mysql-connector-java-8.0.27 走这里.
+                // mysql-connector-java-8.0.27 走这里, 获取 session 系统变量信息.
                 StringBuilder queryBuf = new StringBuilder(versionComment).append("SELECT");
                 queryBuf.append("  @@session.auto_increment_increment AS auto_increment_increment");
                 queryBuf.append(", @@character_set_client AS character_set_client");

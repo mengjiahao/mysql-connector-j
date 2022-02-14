@@ -113,7 +113,7 @@ public class ServerPreparedQuery extends AbstractPreparedQuery<ServerPreparedQue
     }
 
     /**
-     * 发送 PreparedStatement 给 server.
+     * 发送 PreparedStatement 给 server, 并处理回包消息.
      * @param sql
      *            query string
      * @throws IOException
@@ -135,6 +135,7 @@ public class ServerPreparedQuery extends AbstractPreparedQuery<ServerPreparedQue
                 characterEncoding = connectionEncoding;
             }
 
+            // NativeMessageBuilder 构建包 并RPC发送并获取回包.
             NativePacketPayload prepareResultPacket = this.session
                     .sendCommand(this.commandBuilder.buildComStmtPrepare(this.session.getSharedSendPacket(), sql, characterEncoding), false, 0);
 
@@ -146,6 +147,7 @@ public class ServerPreparedQuery extends AbstractPreparedQuery<ServerPreparedQue
             int fieldCount = (int) prepareResultPacket.readInteger(IntegerDataType.INT2);
             setParameterCount((int) prepareResultPacket.readInteger(IntegerDataType.INT2));
 
+            // 初始化 parameterCount 个参数。
             this.queryBindings = new ServerPreparedQueryBindings(this.parameterCount, this.session);
             this.queryBindings.setLoadDataQuery(loadDataQuery);
 
@@ -165,7 +167,7 @@ public class ServerPreparedQuery extends AbstractPreparedQuery<ServerPreparedQue
                     this.session.getProtocol().skipPacket();
                 }
 
-                // 这里解析有 参数类型.
+                // 这里解析有 param参数类型, 类型都是 FIELD_TYPE_VARBINARY ？
                 // com.mysql.cj.result.Field@63355449[dbName=null,tableName=null,originalTableName=null,columnName=?,originalColumnName=null,mysqlType=253(FIELD_TYPE_VARBINARY),sqlType=-3,flags= BINARY BLOB, charsetIndex=63, charsetName=ISO-8859-1]
                 this.parameterFields = this.session.getProtocol().read(ColumnDefinition.class, new ColumnDefinitionFactory(this.parameterCount, null))
                         .getFields();
@@ -173,7 +175,7 @@ public class ServerPreparedQuery extends AbstractPreparedQuery<ServerPreparedQue
 
             // Read in the result set column information
             if (fieldCount > 0) {
-                // 这里解析有 返回的列类型.
+                // 这里解析有 返回值的列类型.
                 this.resultFields = this.session.getProtocol().read(ColumnDefinition.class, new ColumnDefinitionFactory(fieldCount, null));
             }
         }
@@ -186,6 +188,8 @@ public class ServerPreparedQuery extends AbstractPreparedQuery<ServerPreparedQue
     }
 
     /**
+     * 执行 COM_EXECUTE.
+     *
      * @param <T>
      *            extends {@link Resultset}
      * @param maxRowsToRetrieve
@@ -221,6 +225,7 @@ public class ServerPreparedQuery extends AbstractPreparedQuery<ServerPreparedQue
     }
 
     public NativePacketPayload prepareExecutePacket() {
+        // 参数.
         ServerPreparedQueryBindValue[] parameterBindings = this.queryBindings.getBindValues();
 
         if (this.queryBindings.isLongParameterSwitchDetected()) {
@@ -244,11 +249,11 @@ public class ServerPreparedQuery extends AbstractPreparedQuery<ServerPreparedQue
             serverResetStatement();
         }
 
+        // 检查参数是否都设置了.
         this.queryBindings.checkAllParametersSet();
 
         //
         // Send all long data
-        // 注意这里利用了 parameterCount
         //
         for (int i = 0; i < this.parameterCount; i++) {
             if (parameterBindings[i].isStream()) {
@@ -264,6 +269,7 @@ public class ServerPreparedQuery extends AbstractPreparedQuery<ServerPreparedQue
         packet.writeInteger(IntegerDataType.INT1, NativeConstants.COM_STMT_EXECUTE);
         packet.writeInteger(IntegerDataType.INT4, this.serverStatementId);
 
+        // 一般是false。
         boolean supportsQueryAttributes = this.session.getServerSession().supportsQueryAttributes();
         boolean sendQueryAttributes = false;
         if (supportsQueryAttributes) {
@@ -302,6 +308,7 @@ public class ServerPreparedQuery extends AbstractPreparedQuery<ServerPreparedQue
             }
         }
 
+        // encode COM_EXECUTE 包。
         if (parametersAndAttributesCount > 0) {
             /* Reserve place for null-marker bytes */
             int nullCount = (parametersAndAttributesCount + 7) / 8;
@@ -369,6 +376,12 @@ public class ServerPreparedQuery extends AbstractPreparedQuery<ServerPreparedQue
         return packet;
     }
 
+    /**
+     * RPC，发送并获取 COM_EXECUTE 的返回包.
+     * @param packet
+     * @param queryAsString
+     * @return
+     */
     public NativePacketPayload sendExecutePacket(NativePacketPayload packet, String queryAsString) { // TODO queryAsString should be shared instead of passed
 
         final long begin = this.session.getCurrentTimeNanosOrMillis();
@@ -434,6 +447,17 @@ public class ServerPreparedQuery extends AbstractPreparedQuery<ServerPreparedQue
         }
     }
 
+    /**
+     * 获取返回值并解析为 ResultSet.
+     * @param resultPacket
+     * @param maxRowsToRetrieve
+     * @param createStreamingResultSet
+     * @param metadata
+     * @param resultSetFactory
+     * @param queryAsString
+     * @param <T>
+     * @return
+     */
     public <T extends Resultset> T readExecuteResult(NativePacketPayload resultPacket, int maxRowsToRetrieve, boolean createStreamingResultSet,
             ColumnDefinition metadata, ProtocolEntityFactory<T, NativePacketPayload> resultSetFactory, String queryAsString) { // TODO queryAsString should be shared instead of passed
         try {

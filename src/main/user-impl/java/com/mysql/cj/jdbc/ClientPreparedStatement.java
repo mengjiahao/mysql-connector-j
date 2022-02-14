@@ -960,6 +960,7 @@ public class ClientPreparedStatement extends com.mysql.cj.jdbc.StatementImpl imp
             JdbcConnection locallyScopedConn = this.connection;
 
             if (!this.doPingInstead) {
+                // queryReturnType 是 PRODUCES_RESULT_SET
                 QueryReturnType queryReturnType = getParseInfo().getQueryReturnType();
                 if (queryReturnType != QueryReturnType.PRODUCES_RESULT_SET && queryReturnType != QueryReturnType.MAY_PRODUCE_RESULT_SET) {
                     throw SQLError.createSQLException(Messages.getString("Statement.57"), MysqlErrorNumbers.SQL_STATE_ILLEGAL_ARGUMENT,
@@ -983,6 +984,7 @@ public class ClientPreparedStatement extends com.mysql.cj.jdbc.StatementImpl imp
 
             setupStreamingTimeout(locallyScopedConn);
 
+            // 一般来说 fillSendPacket 返回 NULL.
             Message sendPacket = ((PreparedQuery<?>) this.query).fillSendPacket();
 
             String oldDb = null;
@@ -1594,6 +1596,7 @@ public class ClientPreparedStatement extends com.mysql.cj.jdbc.StatementImpl imp
 
     @Override
     public void setInt(int parameterIndex, int x) throws SQLException {
+        // 注意 query 是 ServerPreparedQuery.
         synchronized (checkClosed().getConnectionMutex()) {
             ((PreparedQuery<?>) this.query).getQueryBindings().setInt(getCoreParameterIndex(parameterIndex), x);
         }

@@ -108,6 +108,10 @@ public abstract class AbstractPreparedQuery<T extends QueryBindings<?>> extends 
         this.parameterCount = parameterCount;
     }
 
+    /**
+     * 这是 PreparedStatement 参数绑定.
+     * @return
+     */
     @Override
     public T getQueryBindings() {
         return this.queryBindings;

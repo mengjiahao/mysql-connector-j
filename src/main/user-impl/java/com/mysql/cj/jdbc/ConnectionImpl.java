@@ -1614,6 +1614,7 @@ public class ConnectionImpl implements JdbcConnection, SessionEventListener, Ser
 
                         if (pStmt == null) {
                             try {
+                                // 这里获取server端返回的 ServerPreparedStatement.
                                 pStmt = ServerPreparedStatement.getInstance(getMultiHostSafeProxy(), nativeSql, this.database, resultSetType,
                                         resultSetConcurrency);
                                 if (sql.length() < this.prepStmtCacheSqlLimit.getValue()) {
@@ -1655,6 +1656,7 @@ public class ConnectionImpl implements JdbcConnection, SessionEventListener, Ser
                 pStmt = (ClientPreparedStatement) clientPrepareStatement(nativeSql, resultSetType, resultSetConcurrency, false);
             }
 
+            // 返回的是 ServerPreparedStatement.
             return pStmt;
         }
     }

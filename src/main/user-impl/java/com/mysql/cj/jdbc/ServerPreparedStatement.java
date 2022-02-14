@@ -125,7 +125,9 @@ public class ServerPreparedStatement extends ClientPreparedStatement {
         super(conn, db);
 
         checkNullOrEmptyQuery(sql);
+        // 抽取statement上comment信息.
         String statementComment = this.session.getProtocol().getQueryComment();
+        // 注意 this.query 是 ServerPreparedQuery.
         ((PreparedQuery<?>) this.query).setOriginalSql(statementComment == null ? sql : "/* " + statementComment + " */ " + sql);
         ((PreparedQuery<?>) this.query).setParseInfo(new ParseInfo(((PreparedQuery<?>) this.query).getOriginalSql(), this.session, this.charEncoding));
 
@@ -139,6 +141,7 @@ public class ServerPreparedStatement extends ClientPreparedStatement {
             throw SQLExceptionsMapping.translateException(sqlEx, this.exceptionInterceptor);
         }
 
+        // resultSetType 是 1003， resultSetConcurrency 是 1007.
         setResultSetType(resultSetType);
         setResultSetConcurrency(resultSetConcurrency);
     }
@@ -634,6 +637,11 @@ public class ServerPreparedStatement extends ClientPreparedStatement {
         }
     }
 
+    /**
+     * 向 server 发送 COM_PREPARE 请求.
+     * @param sql
+     * @throws SQLException
+     */
     protected void serverPrepare(String sql) throws SQLException {
         synchronized (checkClosed().getConnectionMutex()) {
             SQLException t = null;

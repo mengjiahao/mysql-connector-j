@@ -112,6 +112,7 @@ public class ServerPreparedQueryBindings extends AbstractQueryBindings<ServerPre
             }
         }
 
+        // 一般来说 bindValues[i] 不为 NULL.
         return this.bindValues[parameterIndex];
     }
 
@@ -363,8 +364,14 @@ public class ServerPreparedQueryBindings extends AbstractQueryBindings<ServerPre
         binding.parameterType = MysqlType.FLOAT; // TODO check; was Types.FLOAT but should be Types.REAL to map to SQL FLOAT
     }
 
+    /**
+     * 对 PreparedStatement 的参数进行绑定值。
+     * @param parameterIndex
+     * @param x
+     */
     @Override
     public void setInt(int parameterIndex, int x) {
+        // ServerPreparedQueryBindValue 包含 类型信息 与 Object值.
         ServerPreparedQueryBindValue binding = getBinding(parameterIndex, false);
         this.sendTypesToServer.compareAndSet(false, binding.resetToType(MysqlType.FIELD_TYPE_LONG, this.numberOfExecutions));
         binding.value = Long.valueOf(x);
