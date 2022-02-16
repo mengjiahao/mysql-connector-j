@@ -422,6 +422,11 @@ public class ClientPreparedQueryBindings extends AbstractQueryBindings<ClientPre
         }
     }
 
+    /**
+     * 浮点数都转为string.
+     * @param parameterIndex
+     * @param x
+     */
     @Override
     public void setDouble(int parameterIndex, double x) {
         if (!this.session.getPropertySet().getBooleanProperty(PropertyKey.allowNanAndInf).getValue()

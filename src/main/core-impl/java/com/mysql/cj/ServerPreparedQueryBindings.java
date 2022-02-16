@@ -343,6 +343,11 @@ public class ServerPreparedQueryBindings extends AbstractQueryBindings<ServerPre
         }
     }
 
+    /**
+     * 值仍用double.
+     * @param parameterIndex
+     * @param x
+     */
     @Override
     public void setDouble(int parameterIndex, double x) {
         if (!this.session.getPropertySet().getBooleanProperty(PropertyKey.allowNanAndInf).getValue()
@@ -562,6 +567,14 @@ public class ServerPreparedQueryBindings extends AbstractQueryBindings<ServerPre
         setTime(parameterIndex, x, null);
     }
 
+    /**
+     * setTimestamp 最后会调用这个.
+     * @param parameterIndex
+     * @param x
+     * @param targetCalendar
+     * @param fractionalLength
+     * @param targetMysqlType
+     */
     @Override
     public void bindTimestamp(int parameterIndex, Timestamp x, Calendar targetCalendar, int fractionalLength, MysqlType targetMysqlType) {
         ServerPreparedQueryBindValue binding = getBinding(parameterIndex, false);

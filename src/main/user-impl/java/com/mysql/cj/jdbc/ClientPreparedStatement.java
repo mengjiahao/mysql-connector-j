@@ -1582,6 +1582,12 @@ public class ClientPreparedStatement extends com.mysql.cj.jdbc.StatementImpl imp
         }
     }
 
+    /**
+     * Decimal 一般也是用的setDouble. QueryBindings 是 ServerPreparedQueryBindings.
+     * @param parameterIndex
+     * @param x
+     * @throws SQLException
+     */
     @Override
     public void setDouble(int parameterIndex, double x) throws SQLException {
         synchronized (checkClosed().getConnectionMutex()) {
@@ -1795,6 +1801,12 @@ public class ClientPreparedStatement extends com.mysql.cj.jdbc.StatementImpl imp
         }
     }
 
+    /**
+     * timestamp 类型仍然是 TIMESTAMP.
+     * @param parameterIndex
+     * @param x
+     * @throws java.sql.SQLException
+     */
     @Override
     public void setTimestamp(int parameterIndex, Timestamp x) throws java.sql.SQLException {
         synchronized (checkClosed().getConnectionMutex()) {
