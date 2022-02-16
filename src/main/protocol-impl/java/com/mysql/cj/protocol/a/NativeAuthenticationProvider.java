@@ -198,6 +198,7 @@ public class NativeAuthenticationProvider implements AuthenticationProvider<Nati
                 | (this.propertySet.getBooleanProperty(PropertyKey.trackSessionState).getValue() ? (capabilityFlags & NativeServerSession.CLIENT_SESSION_TRACK)
                         : 0);
 
+        // 设置 capacity.
         sessState.setClientParam(clientParam);
 
         /* First, negotiate SSL connection */

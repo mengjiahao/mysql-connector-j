@@ -163,11 +163,13 @@ public class ServerPreparedQuery extends AbstractPreparedQuery<ServerPreparedQue
             boolean checkEOF = !this.session.getServerSession().isEOFDeprecated();
 
             if (this.parameterCount > 0) {
+
                 if (checkEOF) { // Skip the following EOF packet.
                     this.session.getProtocol().skipPacket();
                 }
 
                 // 这里解析有 param参数类型, 类型都是 FIELD_TYPE_VARBINARY ？
+                // 注意这里读到 param column def 后面是EOF就推出循环.
                 // com.mysql.cj.result.Field@63355449[dbName=null,tableName=null,originalTableName=null,columnName=?,originalColumnName=null,mysqlType=253(FIELD_TYPE_VARBINARY),sqlType=-3,flags= BINARY BLOB, charsetIndex=63, charsetName=ISO-8859-1]
                 this.parameterFields = this.session.getProtocol().read(ColumnDefinition.class, new ColumnDefinitionFactory(this.parameterCount, null))
                         .getFields();

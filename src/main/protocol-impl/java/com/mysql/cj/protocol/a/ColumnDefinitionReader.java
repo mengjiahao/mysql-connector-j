@@ -71,9 +71,11 @@ public class ColumnDefinitionReader implements ProtocolEntityReader<ColumnDefini
 
         fields = new Field[(int) columnCount];
 
+        // 解析 每个 列定义包.
         for (int i = 0; i < columnCount; i++) {
             NativePacketPayload fieldPacket = this.protocol.readMessage(null);
             // next check is needed for SSPS
+            // 注意读到 EOF就推出循环.
             if (checkEOF && fieldPacket.isEOFPacket()) {
                 break;
             }
